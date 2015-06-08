@@ -55,7 +55,9 @@ Creating a cockroach cluster with 3 nodes is done as follows:
   * Build cockroach-prod
 
   ```console
-  $ go get github.com/cockroachdb/cockroach-prod
+  $ go get -d github.com/cockroachdb/cockroach-prod
+  $ cd $GOPATH/src/github.com/cockroachdb/cockroach-prod
+  $ make
   ```
   * Install [docker](https://docs.docker.com/installation/) and [docker machine](http://docs.docker.com/machine/)
   * Account on a supported cloud platform. See per-platform pre-requisites.
