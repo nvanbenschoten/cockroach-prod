@@ -26,7 +26,7 @@ import (
 // Base context defaults.
 const (
 	defaultCerts  = "certs"
-	defaultPort   = 8080
+	defaultPort   = 26257
 	defaultRegion = ""
 	// GCEProject defaults to "cockroach-${USER}"
 	defaultGCETokenPath = "${HOME}/.docker/machine/gce_token"

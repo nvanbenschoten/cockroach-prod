@@ -11,7 +11,7 @@ github.com/aws/aws-sdk-go/service/ec2
 github.com/aws/aws-sdk-go/service/elb
 github.com/biogo/store/interval
 github.com/biogo/store/llrb
-github.com/cockroachdb/cockroach/proto
+github.com/cockroachdb/cockroach/roachpb
 github.com/cockroachdb/cockroach/util
 github.com/ghemawat/stream
 github.com/gogo/protobuf/proto
