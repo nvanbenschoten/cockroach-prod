@@ -5,6 +5,7 @@
 
 # bunch
 .vendor
+.bootstrap
 
 # Binaries
 cockroach-prod

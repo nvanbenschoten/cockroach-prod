@@ -1,11 +1,7 @@
-all: bunch build check
+all: build check
 
 build:
-	bunch install
 	bunch go build
-
-bunch:
-	go get github.com/dkulchenko/bunch
 
 GOFILES := $(shell find . -name '*.go' | grep -vF '/.')
 
@@ -16,3 +12,10 @@ check:
 	bunch exec goimports -l $(GOFILES)
 	go vet ./...
 	go tool vet --shadow $(GOFILES)
+
+.bootstrap: Bunchfile Bunchfile.lock
+	go get github.com/dkulchenko/bunch
+	bunch install
+	touch $@
+
+-include .bootstrap
