@@ -8,8 +8,8 @@ GOFILES := $(shell find . -name '*.go' | grep -vF '/.')
 check:
 	bunch exec errcheck -ignore 'github.com/spf13/cobra:Usage' ./...
 	bunch exec golint ./...
-	bunch exec gofmt -s -l $(GOFILES)
-	bunch exec goimports -l $(GOFILES)
+	! bunch exec gofmt -s -l -w $(GOFILES) | grep -vF 'No Exceptions'
+	! bunch exec goimports -l -w $(GOFILES) | grep -vF 'No Exceptions'
 	go vet ./...
 	go tool vet --shadow $(GOFILES)
 
