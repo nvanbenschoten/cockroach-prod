@@ -26,10 +26,10 @@ import (
 // FindDefaultVPC looks for the default VPC in a given region
 // and returns its ID if found.
 func FindDefaultVPC(region string) (string, error) {
-	ec2Service := ec2.New(&aws.Config{Region: region})
+	ec2Service := ec2.New(&aws.Config{Region: aws.String(region)})
 
 	// Call the DescribeInstances Operation
-	resp, err := ec2Service.DescribeVPCs(&ec2.DescribeVPCsInput{
+	resp, err := ec2Service.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("isDefault"),
@@ -41,12 +41,12 @@ func FindDefaultVPC(region string) (string, error) {
 		return "", err
 	}
 
-	if len(resp.VPCs) == 0 {
+	if len(resp.Vpcs) == 0 {
 		return "", util.Errorf("no default VPC found in region %s", region)
 	}
-	if len(resp.VPCs) > 1 {
-		return "", util.Errorf("found %d default VPCs in region %s", len(resp.VPCs), region)
+	if len(resp.Vpcs) > 1 {
+		return "", util.Errorf("found %d default Vpcs in region %s", len(resp.Vpcs), region)
 	}
 
-	return *resp.VPCs[0].VPCID, nil
+	return *resp.Vpcs[0].VpcId, nil
 }

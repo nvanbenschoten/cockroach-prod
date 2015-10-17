@@ -35,7 +35,7 @@ const (
 // We needs its ID for other EC2 tasks (eg: create load balancer).
 // Not finding the security group is an error.
 func FindSecurityGroup(region string) (string, error) {
-	ec2Service := ec2.New(&aws.Config{Region: region})
+	ec2Service := ec2.New(&aws.Config{Region: aws.String(region)})
 	resp, err := ec2Service.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		GroupNames: []*string{aws.String(securityGroupName)},
 	})
@@ -47,7 +47,7 @@ func FindSecurityGroup(region string) (string, error) {
 		return "", util.Errorf("security group with name %q not found", securityGroupName)
 	}
 
-	return *resp.SecurityGroups[0].GroupID, nil
+	return *resp.SecurityGroups[0].GroupId, nil
 }
 
 // AddCockroachSecurityGroupIngress takes in a nodeInfo and
@@ -56,14 +56,14 @@ func FindSecurityGroup(region string) (string, error) {
 // Duplicates are technically errors according to the AWS API, but we check for
 // the duplicate error code and return ok.
 func AddCockroachSecurityGroupIngress(region string, cockroachPort int64, securityGroupID string) error {
-	ec2Service := ec2.New(&aws.Config{Region: region})
+	ec2Service := ec2.New(&aws.Config{Region: aws.String(region)})
 
 	_, err := ec2Service.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-		CIDRIP:     aws.String(allIPAddresses),
-		FromPort:   aws.Long(cockroachPort),
-		ToPort:     aws.Long(cockroachPort),
-		IPProtocol: aws.String(cockroachProtocol),
-		GroupID:    aws.String(securityGroupID),
+		CidrIp:     aws.String(allIPAddresses),
+		FromPort:   aws.Int64(cockroachPort),
+		ToPort:     aws.Int64(cockroachPort),
+		IpProtocol: aws.String(cockroachProtocol),
+		GroupId:    aws.String(securityGroupID),
 	})
 
 	if IsAWSErrorCode(err, awsSecurityRuleDuplicateError) {
