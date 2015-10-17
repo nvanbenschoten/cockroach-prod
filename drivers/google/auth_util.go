@@ -47,9 +47,12 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/goauth2/oauth" // Deprecated. TODO: replace with golang.org/x/oauth2
-	"github.com/cockroachdb/cockroach/util/log"
 	compute "google.golang.org/api/compute/v1"
+
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+
+	"github.com/cockroachdb/cockroach/util/log"
 )
 
 // OAuth logic. This initializes a GCE Service with a OAuth token.
@@ -69,18 +72,50 @@ const (
 	redirectURI  = "urn:ietf:wg:oauth:2.0:oob"
 )
 
-// gobCache implements oauth.Cache.
-// Its value is the full path name to the cache file.
-// This is pretty much oauth.CacheFile, but with gob encoding.
-type gobCache string
+var oauth2Config = &oauth2.Config{
+	ClientID:     clientID,
+	ClientSecret: clientSecret,
+	Endpoint: oauth2.Endpoint{
+		AuthURL:  authURL,
+		TokenURL: tokenURL,
+	},
+	RedirectURL: redirectURI,
+	Scopes:      []string{compute.ComputeScope},
+}
+
+var _ oauth2.TokenSource = browserSource{}
+var _ oauth2.TokenSource = gobSource("")
+
+// browserSource is a token source that punts to a browser for oauth.
+type browserSource struct {
+	base oauth2.TokenSource
+}
+
+func (source browserSource) Token() (*oauth2.Token, error) {
+	if token, err := source.base.Token(); err == nil {
+		return token, nil
+	}
+
+	// Get a new token. Pops up a browser window (hopefully).
+	randState := fmt.Sprintf("st%d", time.Now().UnixNano())
+	authURL := oauth2Config.AuthCodeURL(randState)
+	log.Infof("Opening auth URL in browser: %s", authURL)
+	log.Infof("If the URL doesn't open please open it manually and copy the code here.")
+	openURL(authURL)
+	code := getCodeFromStdin()
+	return oauth2Config.Exchange(context.Background(), code)
+}
+
+// gobSource is a gob-encoding file-backed token source.
+type gobSource string
 
 // Token returns the cached token value, or an error if none is found.
-func (f gobCache) Token() (*oauth.Token, error) {
+func (f gobSource) Token() (*oauth2.Token, error) {
 	file, err := os.Open(string(f))
 	if err != nil {
 		return nil, err
 	}
-	tok := &oauth.Token{}
+	tok := &oauth2.Token{}
 	if err = gob.NewDecoder(file).Decode(tok); err != nil {
 		return nil, err
 	}
@@ -89,7 +124,7 @@ func (f gobCache) Token() (*oauth.Token, error) {
 
 // PutToken stores the given token in the cache.
 // TODO(marc): we should write to a tmp file and rename in case we error out.
-func (f gobCache) PutToken(tok *oauth.Token) error {
+func (f gobSource) PutToken(tok *oauth2.Token) error {
 	filename := string(f)
 	// Create the parent directory if necessary.
 	parent := filepath.Dir(filename)
@@ -117,59 +152,12 @@ func (f gobCache) PutToken(tok *oauth.Token) error {
 }
 
 func newOauthClient(authTokenPath string) (*http.Client, error) {
-	config := &oauth.Config{
-		ClientId:     clientID,
-		ClientSecret: clientSecret,
-		Scope:        compute.ComputeScope,
-		AuthURL:      authURL,
-		TokenURL:     tokenURL,
-		RedirectURL:  redirectURI,
-		TokenCache:   gobCache(authTokenPath),
-		// Needed for refresh tokens:
-		AccessType:     "offline",
-		ApprovalPrompt: "force",
-	}
-
-	transport := &oauth.Transport{
-		Config:    config,
-		Transport: http.DefaultTransport,
-	}
-
-	err := initTransport(transport)
+	token, err := oauth2.ReuseTokenSource(nil, browserSource{base: gobSource(authTokenPath)}).Token()
 	if err != nil {
+		log.Infof("problem exchanging code: %s", err)
 		return nil, err
 	}
-	return transport.Client(), nil
-}
-
-func initTransport(transport *oauth.Transport) error {
-	// First: check the cache.
-	if token, err := transport.Config.TokenCache.Token(); err == nil {
-		// We have a token, refresh it. The lifetime is 1h, so we always
-		// refresh to ensure lengthy commands do not time out.
-		transport.Token = token
-		err := transport.Refresh()
-		if err == nil {
-			return nil
-		}
-		log.Infof("token refresh failed, requesting new one")
-	}
-
-	// Get a new token. Pops up a browser window (hopefully).
-	randState := fmt.Sprintf("st%d", time.Now().UnixNano())
-	authURL := transport.Config.AuthCodeURL(randState)
-	log.Infof("Opening auth URL in browser: %s", authURL)
-	log.Infof("If the URL doesn't open please open it manually and copy the code here.")
-	openURL(authURL)
-	code := getCodeFromStdin()
-
-	_, err := transport.Exchange(code)
-	if err != nil {
-		log.Infof("problem exchanging code: %v", err)
-		return err
-	}
-
-	return nil
+	return oauth2Config.Client(context.Background(), token), nil
 }
 
 func getCodeFromStdin() string {
