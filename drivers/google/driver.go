@@ -123,7 +123,7 @@ func (g *Google) Init() error {
 	}
 	g.instanceGroupsService = ivSvc
 
-	if err = g.checkProjectExists(); err != nil {
+	if err := g.checkProjectExists(); err != nil {
 		return util.Errorf("invalid project %q: %v", g.project, err)
 	}
 
@@ -234,8 +234,7 @@ func (g *Google) AfterFirstNode() error {
 	}
 
 	log.Info("creating forwarding rule")
-	_, err = g.createForwardingRule(httpProxyLink)
-	if err != nil {
+	if _, err := g.createForwardingRule(httpProxyLink); err != nil {
 		return util.Errorf("failed to create forwarding rule: %v", err)
 	}
 	return nil

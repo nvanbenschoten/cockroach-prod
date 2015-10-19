@@ -183,8 +183,7 @@ func (a *Amazon) AfterFirstNode() error {
 	}
 
 	log.Info("adding security group rule")
-	err = AddCockroachSecurityGroupIngress(a.region, a.context.Port, securityGroupID)
-	if err != nil {
+	if err := AddCockroachSecurityGroupIngress(a.region, a.context.Port, securityGroupID); err != nil {
 		return util.Errorf("failed to add security group rule: %v", err)
 	}
 

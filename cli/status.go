@@ -63,9 +63,8 @@ func runStatus(cmd *cobra.Command, args []string) {
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	err = c.Run()
 
-	if err != nil {
+	if err := c.Run(); err != nil {
 		log.Error(err)
 	}
 
