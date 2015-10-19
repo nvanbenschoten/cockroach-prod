@@ -84,18 +84,12 @@ var oauth2Config = &oauth2.Config{
 }
 
 var _ oauth2.TokenSource = browserSource{}
-var _ oauth2.TokenSource = gobSource("")
+var _ oauth2.TokenSource = gobSource{}
 
 // browserSource is a token source that punts to a browser for oauth.
-type browserSource struct {
-	base oauth2.TokenSource
-}
+type browserSource struct{}
 
 func (source browserSource) Token() (*oauth2.Token, error) {
-	if token, err := source.base.Token(); err == nil {
-		return token, nil
-	}
-
 	// Get a new token. Pops up a browser window (hopefully).
 	randState := fmt.Sprintf("st%d", time.Now().UnixNano())
 	authURL := oauth2Config.AuthCodeURL(randState)
@@ -107,52 +101,49 @@ func (source browserSource) Token() (*oauth2.Token, error) {
 }
 
 // gobSource is a gob-encoding file-backed token source.
-type gobSource string
+type gobSource struct {
+	path string
+	base oauth2.TokenSource
+}
 
 // Token returns the cached token value, or an error if none is found.
 func (f gobSource) Token() (*oauth2.Token, error) {
-	file, err := os.Open(string(f))
+	file, err := os.Open(f.path)
 	if err != nil {
-		return nil, err
+		return f.cacheUnderlying()
 	}
-	tok := &oauth2.Token{}
-	if err = gob.NewDecoder(file).Decode(tok); err != nil {
-		return nil, err
+	token := &oauth2.Token{}
+	if err := gob.NewDecoder(file).Decode(token); err != nil {
+		return f.cacheUnderlying()
 	}
-	return tok, file.Close()
+
+	return token, file.Close()
 }
 
-// PutToken stores the given token in the cache.
 // TODO(marc): we should write to a tmp file and rename in case we error out.
-func (f gobSource) PutToken(tok *oauth2.Token) error {
-	filename := string(f)
+func (f gobSource) cacheUnderlying() (token *oauth2.Token, err error) {
+	token, err = f.base.Token()
+	if err != nil {
+		return token, err
+	}
+
 	// Create the parent directory if necessary.
-	parent := filepath.Dir(filename)
-	err := os.MkdirAll(parent, 0700)
-	if err != nil {
-		return err
+	if mkdirErr := os.MkdirAll(filepath.Dir(f.path), 0700); mkdirErr != nil {
+		return
 	}
 
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
+	file, openFileErr := os.OpenFile(f.path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if openFileErr != nil {
+		return
 	}
-	encErr := gob.NewEncoder(file).Encode(tok)
-	clErr := file.Close()
+	_ = gob.NewEncoder(file).Encode(token)
+	_ = file.Close()
 
-	if encErr != nil {
-		return encErr
-	}
-
-	if clErr != nil {
-		return clErr
-	}
-
-	return nil
+	return
 }
 
 func newOauthClient(authTokenPath string) (*http.Client, error) {
-	token, err := oauth2.ReuseTokenSource(nil, browserSource{base: gobSource(authTokenPath)}).Token()
+	token, err := oauth2.ReuseTokenSource(nil, gobSource{path: authTokenPath, base: browserSource{}}).Token()
 	if err != nil {
 		log.Infof("problem exchanging code: %s", err)
 		return nil, err
@@ -170,8 +161,7 @@ func getCodeFromStdin() string {
 func openURL(url string) {
 	try := []string{"xdg-open", "google-chrome", "open"}
 	for _, bin := range try {
-		err := exec.Command(bin, url).Run()
-		if err == nil {
+		if err := exec.Command(bin, url).Run(); err == nil {
 			return
 		}
 	}
