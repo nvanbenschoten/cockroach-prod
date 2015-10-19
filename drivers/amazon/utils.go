@@ -18,15 +18,15 @@
 package amazon
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/defaults"
 )
 
 // LoadAWSCredentials loads the credentials using the AWS api. This automatically
 // loads from ENV, or from the .aws/credentials file.
 // Returns the key-id and secret-key.
 func LoadAWSCredentials() (string, string, error) {
-	creds, err := aws.DefaultChainCredentials.Get()
+	creds, err := defaults.DefaultChainCredentials.Get()
 	if err != nil {
 		return "", "", err
 	}
