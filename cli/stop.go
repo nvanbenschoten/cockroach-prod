@@ -65,15 +65,13 @@ func runStop(cmd *cobra.Command, args []string) {
 		}
 
 		// Do "stop node" logic.
-		err = driver.StopNode(nodeName, nodeConfig)
-		if err != nil {
+		if err := driver.StopNode(nodeName, nodeConfig); err != nil {
 			log.Errorf("could not run StopNode steps for %s: %v", nodeName, err)
 			return
 		}
 
 		// Stop the machine.
-		err = docker.StopMachine(nodeName)
-		if err != nil {
+		if err := docker.StopMachine(nodeName); err != nil {
 			log.Errorf("could not stop machine %s: %v", nodeName, err)
 		}
 	}

@@ -108,7 +108,7 @@ func (g *Google) createFirewallRule() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err = g.waitForOperation(op); err != nil {
+	if err := g.waitForOperation(op); err != nil {
 		return "", err
 	}
 	log.Infof("created FirewallRule %s: %s", firewallRuleName, op.TargetLink)
@@ -139,7 +139,7 @@ func (g *Google) createForwardingRule(targetLink string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err = g.waitForOperation(op); err != nil {
+	if err := g.waitForOperation(op); err != nil {
 		return "", err
 	}
 
@@ -173,7 +173,7 @@ func (g *Google) createHealthCheck() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err = g.waitForOperation(op); err != nil {
+	if err := g.waitForOperation(op); err != nil {
 		return "", err
 	}
 
@@ -206,7 +206,7 @@ func (g *Google) createBackendService(healthCheckLink, instanceGroupLink string)
 	if err != nil {
 		return "", err
 	}
-	if err = g.waitForOperation(op); err != nil {
+	if err := g.waitForOperation(op); err != nil {
 		return "", err
 	}
 
@@ -236,7 +236,7 @@ func (g *Google) createURLMap(backendServiceLink string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err = g.waitForOperation(op); err != nil {
+	if err := g.waitForOperation(op); err != nil {
 		return "", err
 	}
 
@@ -266,7 +266,7 @@ func (g *Google) createHTTPProxy(urlMapLink string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err = g.waitForOperation(op); err != nil {
+	if err := g.waitForOperation(op); err != nil {
 		return "", err
 	}
 

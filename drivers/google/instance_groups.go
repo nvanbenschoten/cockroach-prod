@@ -61,8 +61,7 @@ func (g *Google) createInstanceGroup() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = g.waitForInstanceGroupOperation(op)
-	if err != nil {
+	if err := g.waitForInstanceGroupOperation(op); err != nil {
 		return "", err
 	}
 	log.Infof("created InstanceGroup %s: %s", instanceGroupName, op.TargetLink)

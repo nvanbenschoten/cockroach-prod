@@ -52,15 +52,13 @@ func runInit(cmd *cobra.Command, args []string) {
 	nodeName := docker.MakeNodeName(0)
 
 	// Create first node.
-	err = docker.CreateMachine(driver, nodeName)
-	if err != nil {
+	if err := docker.CreateMachine(driver, nodeName); err != nil {
 		log.Errorf("could not create machine %s: %v", nodeName, err)
 		return
 	}
 
 	// Run driver steps after first-node creation.
-	err = driver.AfterFirstNode()
-	if err != nil {
+	if err := driver.AfterFirstNode(); err != nil {
 		log.Errorf("could not run AfterFirstNode steps for: %v", err)
 		return
 	}
@@ -73,22 +71,19 @@ func runInit(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize cockroach node.
-	err = docker.RunDockerInit(driver, nodeName, nodeConfig)
-	if err != nil {
+	if err := docker.RunDockerInit(driver, nodeName, nodeConfig); err != nil {
 		log.Errorf("could not initialize first cockroach node %s: %v", nodeName, err)
 		return
 	}
 
 	// Do "start node" logic.
-	err = driver.StartNode(nodeName, nodeConfig)
-	if err != nil {
+	if err := driver.StartNode(nodeName, nodeConfig); err != nil {
 		log.Errorf("could not run StartNode steps for %s: %v", nodeName, err)
 		return
 	}
 
 	// Start the cockroach node.
-	err = docker.RunDockerStart(driver, nodeName, nodeConfig)
-	if err != nil {
+	if err := docker.RunDockerStart(driver, nodeName, nodeConfig); err != nil {
 		log.Errorf("could not initialize first cockroach node %s: %v", nodeName, err)
 	}
 }

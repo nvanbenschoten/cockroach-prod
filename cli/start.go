@@ -58,8 +58,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	for _, nodeName := range nodes {
 		// Start machine.
-		err = docker.StartMachine(nodeName)
-		if err != nil {
+		if err := docker.StartMachine(nodeName); err != nil {
 			log.Errorf("could not start machine %s: %v", nodeName, err)
 		}
 
@@ -71,15 +70,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 
 		// Do "start node" logic.
-		err = driver.StartNode(nodeName, nodeConfig)
-		if err != nil {
+		if err := driver.StartNode(nodeName, nodeConfig); err != nil {
 			log.Errorf("could not run StartNode steps for %s: %v", nodeName, err)
 			return
 		}
 
 		// Start the cockroach node.
-		err = docker.RunDockerStart(driver, nodeName, nodeConfig)
-		if err != nil {
+		if err := docker.RunDockerStart(driver, nodeName, nodeConfig); err != nil {
 			log.Errorf("could not start cockroach node %s: %v", nodeName, err)
 		}
 	}
